@@ -1,0 +1,117 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Medical Summarizer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    /* fallback styles in case static/style.css is missing */
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b1220; color:#eaf0ff; }
+    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    .subtitle { opacity: 0.8; margin-bottom: 20px; }
+    .card { background: #121a2b; border: 1px solid #1f2b44; border-radius: 14px; padding: 18px; margin-bottom: 18px; }
+    textarea { width: 100%; min-height: 200px; background:#0e1626; color:#eaf0ff; border:1px solid #233150; border-radius:12px; padding:12px; outline:none; }
+    textarea:focus { border-color:#4b8cff; box-shadow: 0 0 0 2px #4b8cff33; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; }
+    .row .col { flex:1 1 460px; }
+    .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin: 8px 0 14px 0; }
+    label { font-size: 14px; opacity:0.9; }
+    input[type="number"] { width: 90px; padding:6px 8px; border-radius:8px; border:1px solid #233150; background:#0e1626; color:#eaf0ff; }
+    button { background:#4b8cff; color:white; border:none; border-radius:10px; padding:10px 14px; font-weight:600; cursor:pointer; }
+    button[disabled] { opacity:0.6; cursor:not-allowed; }
+    .status { font-size: 13px; opacity: 0.9; min-height: 20px; }
+    .footer { opacity:0.7; font-size: 13px; margin-top: 10px; }
+    .soap label { display:block; margin-bottom:6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Enter doctor–patient conversation here</h1>
+    <div class="subtitle">Paste a medical dialogue below and click “Summarize to SOAP”.</div>
+
+    <div class="card">
+      <textarea id="dialogue" placeholder="Doctor: ...&#10;Patient: ..."></textarea>
+      <div class="controls">
+        <label>max_new_tokens
+          <input id="max_new_tokens" type="number" value="256" min="16" max="512">
+        </label>
+        <label>min_new_tokens
+          <input id="min_new_tokens" type="number" value="16" min="0" max="256">
+        </label>
+        <label>temperature
+          <input id="temperature" type="number" value="0.7" step="0.05" min="0.0" max="2.0">
+        </label>
+        <label>top_p
+          <input id="top_p" type="number" value="0.95" step="0.01" min="0.1" max="1.0">
+        </label>
+
+        <button id="go">Summarize to SOAP</button>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="row soap">
+        <div class="col">
+          <label>SOAP Output</label>
+          <textarea id="soap" placeholder="S: ...&#10;O: ...&#10;A: ...&#10;P: ..."></textarea>
+        </div>
+      </div>
+
+      <div class="footer">
+        Tip: Use the sliders to tune creativity (temperature) and coverage (max_new_tokens).
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function summarize() {
+      const dialogue = $("dialogue").value.trim();
+      const status = $("status");
+      const btn = $("go");
+
+      if (!dialogue) {
+        status.textContent = "Please paste a conversation first.";
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = "Summarizing…";
+
+      try {
+        const payload = {
+          dialogue,
+          max_new_tokens: Number($("max_new_tokens").value || 256),
+          min_new_tokens: Number($("min_new_tokens").value || 16),
+          temperature: Number($("temperature").value || 0.7),
+          top_p: Number($("top_p").value || 0.95),
+        };
+
+        const res = await fetch("/summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        $("soap").value = data.summary || "";
+        status.textContent = "Done.";
+      } catch (e) {
+        status.textContent = "Error: " + e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    $("go").addEventListener("click", summarize);
+  </script>
+</body>
+</html>
