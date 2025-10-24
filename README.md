@@ -181,31 +181,145 @@ The generated outputs became more structured and clinically coherent.
   <img src="content/improvement_comparison.png" alt="Improvement comparison" width="70%">
 </p>
 
+
+## Result Analysis
+
+### **1. Metric-Level Insights**
+
+The model’s fine-tuning phase produced substantial metric improvements, especially in **ROUGE-2**.  
+While **ROUGE-1** and **ROUGE-L** also rose by around 18%, ROUGE-2 achieved the largest relative gain, reflecting stronger **phrase-level coherence** and **contextual fluency** in the generated summaries.
+
+
+**Interpretation:**  
+Fine-tuning helped the model better reproduce **domain-specific collocations** such as *“abdominal pain,” “blood pressure,”* or *“follow-up visit.”*  
+These two-word structures contributed heavily to the ROUGE-2 rise, suggesting that the model learned not just medical vocabulary but **contextual phrasing typical of clinical documentation**.
+
 ---
 
-## 🧰 API Usage Guide
+### **2. Compression and Structural Alignment**
 
-If deployed as an API (for example, via your Hugging Face Space), a typical usage is:
+- The **compression ratio** dropped from **1.28 → 1.01**, meaning the fine-tuned model generates summaries nearly equal in length to reference notes — an indicator of *information-preserving brevity*.  
+- Outputs now consistently follow the **SOAP structure** (S: Subjective, O: Objective, A: Assessment, P: Plan), demonstrating improved structural control.  
+- The fine-tuned summaries show better **topic segmentation** and **section continuity**, reducing run-on or fragmented sentences often observed in the baseline.
 
-```python
-from transformers import BartForConditionalGeneration, BartTokenizer
+---
 
-tokenizer = BartTokenizer.from_pretrained("your-username/biobart-medical-finetuned")
-model = BartForConditionalGeneration.from_pretrained("your-username/biobart-medical-finetuned")
+### **3. Qualitative Improvements**
 
-dialogue = """Doctor: Hello, how are you feeling today?
-Patient: I've been having chest pain for two days."""
-inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, max_length=1024)
-summary_ids = model.generate(inputs["input_ids"], max_length=650, num_beams=4)
-print(tokenizer.decode(summary_ids[0], skip_special_tokens=True))
+- **Clarity:** Generated notes are syntactically cleaner and medically precise.  
+- **Factual consistency:** Fine-tuned outputs show reduced hallucination of conditions or medications.  
+- **Terminology:** Proper usage of clinical shorthand (e.g., “HTN” → “hypertension”) increased.  
+- **Context retention:** Dialogue-level cues such as patient history or symptom duration are now accurately reflected in the summary.
+
+---
+
+### **4. Common Error Patterns**
+
+- Minor **redundancy** in demographic details (e.g., “The patient is a 45-year-old male…” repeated).  
+- Occasional **Assessment-Plan confusion**, where diagnostic impressions slightly blend with suggested actions.  
+- Slight variability in section ordering for shorter dialogues.
+
+---
+
+<p align="center">
+  <img src="content/improvement_comparison.png" alt="Improvement comparison" width="70%">
+</p>
+
+---
+
+### **Summary Statement**
+
+Overall, the fine-tuned BioBART achieved significant gains in both **quantitative metrics** and **qualitative coherence**.  
+The model evolved from producing loosely structured paraphrases to generating clinically grounded, structurally faithful SOAP summaries.
+
+
+---
+
+## API Usage Guide
+
+### **1. Live Demo**
+
+The fine-tuned **BioBART Medical Summarizer** model is deployed as an interactive web application on **Hugging Face Spaces**.
+
+This demo allows users to input doctor–patient dialogues and instantly generate structured **SOAP summaries (Subjective, Objective, Assessment, Plan)** in real time — no local setup required.
+
+➡️ **Try it here:** [**BioBART Medical Summarizer – Live Demo**](https://huggingface.co/spaces/maheer007/biobert_medical_summarizer)
+
+### **Demo Features**
+- **Interactive Interface:** Simple text input box for doctor–patient dialogues  
+- **Real-Time Generation:** Uses the fine-tuned BioBART model to generate SOAP-formatted summaries  
+- **Consistent Output Structure:** Always produces the four sections — *S, O, A, P*  
+- **Cloud-Hosted:** Runs entirely on Hugging Face Spaces (no GPU setup or installation needed)
+
+### **How It Works**
+- The app is powered by **FastAPI** backend logic, wrapped inside a simple **Gradio interface**.  
+- The model and tokenizer are automatically loaded from Hugging Face Hub at startup.  
+- When a user enters a medical dialogue, it is tokenized and passed to the model to generate a concise, clinically coherent SOAP summary.
+
+### **2. Local Setup**
+
+After completing fine-tuning and evaluation, the model was deployed locally as an API using **FastAPI** and **Uvicorn** for serving.
+
+The project includes:
+- `app.py` — main FastAPI application file  
+- `requirements.txt` — list of dependencies  
+- `index.html` — minimal frontend for user interaction  
+
+Install dependencies:
+```bash
+pip install -r requirements.txt
+
+```
+Run the API server locally:
+```bash
+uvicorn app:app --reload
+
 ```
 
-Expected output:
+Development server should be launched:
+```bash
+[uvicorn app:app --reload
+](http://127.0.0.1:8000
+)
 ```
-S: Patient reports chest pain for two days.
-O: No fever or cough.
-A: Likely angina.
-P: ECG and cardiac enzymes ordered.
+When accessed through a browser, it serves a simple HTML interface where users can paste a medical dialogue and generate a SOAP summary interactively.
+
+<p align="center">
+  <img src="content/example.png" alt="example" width="70%">
+</p>
+
+
+**Example Input (JSON):**
+```json
+{"Doctor: Hello, how can I help you today?
+Patient: Hi, I've been having difficulty walking recently.
+Doctor: I see. How long has this been going on?
+Patient: It started about three days ago. I felt some discomfort in the front of my knee and it turned into pain the next day.
+Doctor: Was there any injury or specific event that could have caused this?
+Patient: No, there was no injury or anything that I can think of.
+Doctor: Alright. Have you noticed any swelling of the joint?
+Patient: No, there's no swelling.
+Doctor: Okay. Let me examine your knee. I'll check for tenderness at the medial and lateral femorotibial joint, and other tests like the Lachman test, pivot-shift test, varus/valgus instability, and McMurray test, okay?
+Patient: Sure, go ahead.
+Doctor: *Performs tests* All those tests were negative, which is a good sign. However, I noticed that your range of motion is severely restricted due to the pain. Did you receive any treatment so far?
+Patient: Yes, I was given an intra-articular injection of xylocaine, and it helped temporarily, but then I started feeling a catching sensation in my knee when I moved it.
+Doctor: Okay, let's take a look at some imaging tests. *Examines radiographs and MRI* The simple radiographs showed no abnormal findings, but the MRI revealed a soft tissue mass located near your knee joint. It has an ill-defined border and high signal intensities on both T1- and T2-weighted images. On fat-suppressed images, it has low signal intensity, and there's no contrast enhancement in contrast imaging. Your blood examination also showed no abnormal findings.
+Patient: Oh, that doesn't sound good. What do you suggest I do?
+Doctor: Considering your persistent symptoms, I recommend surgery to remove the mass. We can perform a knee arthroscopy to get a better look at it and remove it if necessary.
+Patient: Okay, I'd like to go ahead with the surgery.
+Doctor: *Performs surgery* During the surgery, we found a large fat mass with mobility on the anterior surface of the proximal-lateral PF joint. It looked like fat and had an ill-defined border. We removed it piece by piece through a resection. Histologically, it was mainly composed of connective tissue and fatty tissue, but we didn't find any signs of lipoma, lipoma arborescens, or pigmented villonodular synovitis.
+Patient: That's a relief. How are my symptoms now?
+Doctor: Your symptoms have improved since the surgery, and there are no more signs of anterior knee pain or any other issues.
+Patient: That's great. Thank you so much, Doctor.
+Doctor: You're welcome. Be sure to follow up with us if you have any concerns or if your symptoms return. Take care!"
+}
+
+{
+S: The patient reports difficulty walking, which began three days ago and has progressed to pain over the next day. The patient denies any injury or specific event that could have caused the symptoms. Previous treatment with an intra-articular injection of xylocaine temporarily alleviated the pain but led to a catching sensation in the knee when moving it.
+O: Physical examination revealed tenderness at the medial and lateral femorotibial joints. Lachman test, pivot-shift test, varus/valgus instability, and McMurray test were negative. Radiographs showed no abnormalities. MRI revealed a soft tissue mass near the knee joint with an ill-defined border and high signal intensities on T1- and T2-weighted images, with low signal intensity on fat-suppressed images and no contrast enhancement. Blood examination showed no abnormal findings. Knee arthroscopy confirmed a large fat mass with mobility on the anterior surface of the proximal-lateral PF joint, resembling a fat mass. Histological examination post-surgery showed it was composed of connective tissue and fatty tissue, with no signs of lipoma, lipoma arborescens, or pigmented villonodular synovitis.
+A: The primary diagnosis is a benign soft tissue tumor of the knee, likely a fat-rich mass, given the imaging characteristics and histological findings. Differential diagnoses could include lipoma or lipoma-like lesions, but these are less likely given the histological and clinical findings.
+P: The management plan included surgical removal of the mass, which was performed. Post-operative care includes monitoring for recurrence of symptoms and regular follow-up appointments to assess recovery and manage any potential complications. Further histological evaluation of the resected mass is recommended to rule out malignancy or other benign conditions. Patient education on signs of recurrence and when to seek immediate care is crucial.
+}
 ```
 
 ---
@@ -218,17 +332,19 @@ P: ECG and cardiac enzymes ordered.
 | Fine-tuned (5 Epochs) | 0.6746 | 0.4015 | 0.4850 | +18–17% |
 | Avg Lengths | Ref: 246 words, Gen: 249 words |  |  | Compression ≈ 1.0 |
 
----
 
-## Contributors
-- **Your Name** – Model design, training, and documentation  
-- **Contributor 1** – Evaluation and visualization  
-- **Contributor 2** – App deployment (Hugging Face Space)
+<p align="center">
+  <img src="content/combined_results.png" alt="results" width="70%">
+</p>
 
 ---
 
-## 🔗 Live Demo
-➡️ [Visit the Hugging Face Space](https://huggingface.co/spaces/your-username/your-space-name)
+## Submitted by
+- Maheer Helal 
+- Email- maheer7helal@gmail.com 
+- phone- 01823403010
+
+---
 
 
 
