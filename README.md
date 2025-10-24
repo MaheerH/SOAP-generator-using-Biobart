@@ -5,9 +5,9 @@
 This project focuses on **automatic summarization of medical dialogues** into structured **SOAP notes** (Subjective, Objective, Assessment, Plan).  
 The system transforms multi-turn doctor–patient conversations into concise medical summaries suitable for clinical documentation.
 
-The goal was to explore **biomedical domain-specific transformers** and evaluate how fine-tuning impacts their summarization ability.  
+The goal was to explore biomedical domain-specific transformers and evaluate how fine-tuning impacts their summarization ability.  
 
-The pipeline was developed and tested on the **UIU Medical Dialogue Dataset**, using **BioBART** as the base model.
+The pipeline was developed and tested on the **UIU Medical Dialogue Dataset**, using **BioBART-base** as the base model.
 
 ---
 
@@ -101,7 +101,7 @@ The model takes raw medical dialogues as input and generates SOAP-formatted summ
 ## Fine-Tuning Process
 
 1. **Data Preparation:**
-   - Merged `.csv` and `.xlsx` files for train, validation, and test.
+   - The dataset was already divided into train, validation and test sets. The `csv` and `xlsx` files were handled using `pandas` library
    - Ensured presence of `dialogue` and `soap` columns.
    - Removed missing or empty entries.
 
@@ -127,6 +127,20 @@ The model takes raw medical dialogues as input and generates SOAP-formatted summ
    The loss consistently decreased across epochs, indicating stable optimization.
 
 ---
+
+### Performance Metric: ROUGE
+
+The **ROUGE (Recall-Oriented Understudy for Gisting Evaluation)** metric was used to evaluate the quality of the generated SOAP note.
+ROUGE measures the degree of overlap between the model-generated summaries and the reference (gold-standard) summaries.
+
+| Metric | Description | Why It Matters |
+|---------|--------------|----------------|
+| **ROUGE-1** | Overlap of single words (unigrams) | Captures overall content coverage |
+| **ROUGE-2** | Overlap of consecutive two-word pairs (bigrams) | Evaluates fluency and phrase-level accuracy |
+| **ROUGE-L** | Longest common subsequence | Reflects structural and contextual alignment |
+
+ROUGE is widely used in summarization tasks because it provides a quantitative measure of how close the generated text is to human-written summaries, making it ideal for this project’s comparison of baseline vs. fine-tuned performance.
+
 
 ## Evaluation Results
 
@@ -226,6 +240,69 @@ These two-word structures contributed heavily to the ROUGE-2 rise, suggesting th
 </p>
 
 ---
+
+## 🔍 Sample Generations and Case Analysis
+
+To further validate the ROUGE-based evaluation, qualitative examples from the test set were analyzed.  
+The following examples illustrate the best and worst performing generations, along with their respective ROUGE scores.
+
+---
+
+### **Best Example (ROUGE-1: 0.80 ; ROUGE-2: 0.60 ; ROUGE-L: 0.70)**
+
+**Input Dialogue (truncated):**
+```
+Dialogue (truncated):
+Doctor: Hello, how can I help you today?
+Patient: Hi, I'm a 38-year-old Liberian female and I'm currently 12 weeks pregnant. I came to the emergency department because I've been experiencing low-grade fever, night sweats, unintentional weight loss, worsening abdominal pain, and intermittent spotting...
+```
+**Referance Summary:**
+```
+S: The patient is a 38-year-old Liberian female, 12 weeks pregnant, presenting with low-grade fever, night sweats, unintentional weight loss, worsening abdominal pain, and intermittent spotting for the past 3 weeks. She has a history of a positive PPD skin test one year ago without follow-up treatment.
+O: Vital signs are stable. Physical examination shows a gravid abdomen but is otherwise unremarkable. Laboratory tests reveal a beta hCG level of 118471, confirming a 12-week viable intrauterine pregnancy. Non-contrast-enhanced CT of the chest shows a large right-sided pleural effusion. Contrast-enhanced CT of the abdomen and pelvis indicates bilateral hilar adenopathy, ascites, peritoneal thickening and enhancement, and mottled nodular-appearing soft tissue. Blood tests show elevated CA 125 and a positive QuantiFERON-TB Gold test. Adenosine deaminase, CA 19, alpha-fetoprotein, and inhibin B levels are normal. Diagnostic laparoscopy with biopsy reveals significant pelvic ascites and diffuse miliary lesions on the peritoneum, with histopathology showing chronic granulomatous inflammation without neoplasm. Special stains reveal rare acid-fast bacilli.
+A: The primary diagnosis is mycobacterial granulomatous peritonitis, likely secondary to untreated latent tuberculosis, as indicated by the patient's history and diagnostic findings. Differential diagnosis initially included ovarian neoplasm, but this was ruled out by biopsy and histopathological examination.
+P: The patient has been started on a four-drug anti-tuberculous therapy regimen. She will be closely monitored in the hospital, with regular follow-ups to assess the response to treatment and manage any potential side effects of the medication. Education on the importance of adherence to the full course of therapy has been provided to ensure a complete recovery. Referrals to infectious disease specialists and continued consultations with obstetrics and gynecology are planned.
+```
+
+**Generated Summary:**
+```
+S: The patient is a 38-year-old Liberian female at 12 weeks gestation, presenting with low-grade fever, night sweats, unintentional weight loss, worsening abdominal pain, and intermittent spotting for the past 3 weeks. She reports a history of a positive PPD skin test a year ago but no follow-up treatment.
+O: Vital signs are stable. Physical examination shows a gravida abdomen otherwise unremarkable. Laboratory tests reveal a beta hCG level of 118471. Pelvic ultrasound confirms a 12-week viable intrauterine pregnancy. Imaging includes non-contrast-enhanced CT of the chest and abdomen, revealing a large right-sided pleural effusion, bilateral hilar adenopathy, ascites, thickening and enhancement of the peritoneum, and mottled nodular-appearing soft tissue suggestive of peritoneal carcinomatosis. Blood work shows elevated CA 125 and a positive QuantiFERON-TB Gold test. Adenosine deaminase, CA 19, alpha-fetoprotein, and inhibin B levels are within normal limits. Diagnostic laparoscopy with biopsy revealed significant pelvis ascites and diffuse miliary lesions, with histopathologic examination showing chronic granulomatous inflammation without neoplasm.
+A: The primary diagnosis is mycobacterial peritoneitis, likely secondary to a previous PPD positive skin test. Differential diagnosis initially included ovarian cancer, which was ruled out based on imaging and lab results.
+P: Initiated four-drug anti-tuberculous therapy. The patient will be closely monitored for response to treatment and potential complications. Education on the importance of adherence to the treatment regimen and regular follow-ups will be provided. Referral to an infectious disease specialist for further evaluation and management of her PPD is recommended.
+```
+**Explanation:** 
+- The generated uses almost identical medical terms as the reference. These overlaps increase ROUGE-1 significantly.
+- “diffuse miliary lesions,” “gravid abdomen,” “beta hCG level,” “anti-tuberculous therapy regimen.” These medically specific bigrams are preserved almost identically from the reference summary, which explains the high ROUGE-2 score.
+- The generated note omits minor redundancies and keeps the same medical meaning. There’s minimal hallucination; every finding or plan corresponds logically to the reference.
+
+### **Worst Example (ROUGE-1: 0.52 ; ROUGE-2: 0.28 ; ROUGE-L: 0.39)**
+
+**Input Dialogue (truncated):**
+```
+Doctor: Hello, I'm reviewing your case and it looks like you're a 52-year-old gentleman, asymptomatic and a nonsmoker, without any comorbidities but with class II obesity, as your BMI is 37.7. Is that correct?
+Patient: Yes, that's right.
+Doctor: You were referred to us from the lung cancer screening...
+```
+**Referance Summary:**
+```
+S: The patient is a 52-year-old male, asymptomatic, nonsmoker, with class II obesity (BMI 37.7). He reports no symptoms related to the identified lung nodule.
+O: High-resolution chest CT scan revealed a 1.5 cm mixed ground glass opacity with a solid component in the right middle lobe. Follow-up CT showed an increase in nodule size. Surgical intervention involved a subcostal right middle lobe lobectomy with systematic mediastinal lymph node dissection. Operative time was 30 minutes. Post-operative management included 6000 i.u of unfractionated heparin (UFH) for venous thromboembolism prophylaxis.
+A: Primary diagnosis is a lung nodule in the right middle lobe, likely malignant given its characteristics and growth on imaging. Differential diagnoses could include benign etiologies like infectious or inflammatory processes, but these are less likely given the imaging and clinical context.
+P: Continue post-operative care and monitoring, including pain management and infection prevention. Schedule follow-up appointments for wound check and to discuss pathology results of the resected nodule and lymph nodes. Emphasize the importance of adherence to venous thromboembolism prophylaxis and gradual increase in activity as tolerated. Provide patient education on signs of complications such as infection, excessive pain, or respiratory difficulties.
+```
+
+**Generated Summary:**
+```
+S: The patient is a 52-year-old male, asymptomatic, nonsmoker with class II obesity (BMI 37.7). He was referred from the lung cancer screening program for a high-resolution chest CT scan, which revealed a 1.5 cm mixed ground glass opacity (GGO) with a larger solid component in the right middle lobe (RML). The nodule increased in size at the follow-up CT scan.
+O: During the surgery, a 5 cm oblique incision was made parallel to the costal arch, and the subcutaneous tissue and rectus abdominis were dissected along the subcostal margin. The xiphoid process and pericardiophrenic fatty tissue were detached, and a subcutal tunnel was dissected. A covidien wound protector (WPLGR914) was placed. A lobectomy was performed using a thoracoscopic lens with a 30° angle, and systematic mediastinal lymph nodes dissection was performed. The operation lasted only 30 minutes without extra ports or extra ports. Post-operative care included routine venous thromboembolism prophylaxis (6000 i.u UFH) 12 hours post-operation.
+A: The primary diagnosis is a right middle lobectomy with successful surgical resection of the tumor. The patient's obesity is a significant comorbidity that complicates postoperative recovery. The prognosis is cautiously optimistic given the successful resection and absence of complications.
+P: Postoperative care includes monitoring recovery and regular follow-ups to assess for any signs of thrombosis or other complications related to the surgery or the procedure. Further consultations with a cardiologist and possibly a pulmonologist may be necessary depending on the patient's recovery progress and any new symptoms. Patient education on signs of complications and when to seek immediate care is crucial.
+```
+**Explanation**
+- The generated note is relatively short and focused. It blends long procedural details into the “O” section, disrupting structure.
+- While medically plausible, these are lexically different from the reference bigrams, so ROUGE-2.
+- The model over-describes the surgery, introducing fine procedural steps that weren’t in the reference.
 
 ### **Summary Statement**
 
