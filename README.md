@@ -111,14 +111,13 @@ The model takes raw medical dialogues as input and generates SOAP-formatted summ
    - Used `DataCollatorForSeq2Seq` for dynamic padding.
 
 3. **Training Parameters:**
-   - Learning rate: 4e-5  
-   - Epochs: 5  
+   - Learning rate: 4e-5 (from 5e-5) 
+   - Epochs: 5 (from 3) 
    - Weight decay: 0.01  
    - Gradient accumulation: 4  
 
 
 4. **Training Curves:**
-   4. **Training Curves:**
 
 <p align="center">
   <img src="content/training_loss_curves.png" alt="Training Loss Curve" width="70%">
@@ -241,7 +240,7 @@ These two-word structures contributed heavily to the ROUGE-2 rise, suggesting th
 
 ---
 
-## 🔍 Sample Generations and Case Analysis
+## Sample Generations and Case Analysis
 
 To further validate the ROUGE-based evaluation, qualitative examples from the test set were analyzed.  
 The following examples illustrate the best and worst performing generations, along with their respective ROUGE scores.
@@ -324,9 +323,8 @@ This demo allows users to input doctor–patient dialogues and instantly generat
 
 ### **Demo Features**
 - **Interactive Interface:** Simple text input box for doctor–patient dialogues  
-- **Real-Time Generation:** Uses the fine-tuned BioBART model to generate SOAP-formatted summaries  
 - **Consistent Output Structure:** Always produces the four sections — *S, O, A, P*  
-- **Cloud-Hosted:** Runs entirely on Hugging Face Spaces (no GPU setup or installation needed)
+- **Cloud-Hosted:** Runs entirely on Hugging Face Spaces, no GPU setup or installation needed
 
 ### **How It Works**
 - The app is powered by **FastAPI** backend logic, wrapped inside a simple **Gradio interface**.  
