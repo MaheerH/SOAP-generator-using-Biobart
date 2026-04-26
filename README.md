@@ -414,10 +414,10 @@ P: The management plan included surgical removal of the mass, which was performe
 
 ---
 
-## Submitted by
+## Project done by
 - Maheer Helal 
 - Email- maheer7helal@gmail.com 
-- phone- 01823403010
+
 
 ---
 
